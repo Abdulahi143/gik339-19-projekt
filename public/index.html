@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grupp 19 - Film CRUD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-800 font-sans p-6">
+
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold text-center mb-8 text-indigo-600">Filmbibliotek (Grupp 19)</h1>
+
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-semibold mb-4" id="form-title">Lägg till ny film</h2>
+            <form id="film-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="hidden" id="film-id">
+
+                <div>
+                    <label class="block text-sm font-bold mb-2">Titel</label>
+                    <input type="text" id="title" required
+                        class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Regissör</label>
+                    <input type="text" id="director" required
+                        class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Årtal</label>
+                    <input type="number" id="year" required
+                        class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Genre</label>
+                    <select id="genre"
+                        class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-indigo-500">
+                        <option value="Action">Action</option>
+                        <option value="Drama">Drama</option>
+                        <option value="Komedi">Komedi</option>
+                        <option value="Skräck">Skräck</option>
+                        <option value="Sci-Fi">Sci-Fi</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2 flex gap-2">
+                    <button type="submit"
+                        class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition w-full">Spara
+                        Film</button>
+                    <button type="button" id="cancel-btn"
+                        class="hidden bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 transition">Avbryt</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="film-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div>
+    </div>
+
+    <div id="feedback-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded shadow-lg text-center">
+            <h3 class="text-xl font-bold mb-4" id="modal-title">Meddelande</h3>
+            <p id="modal-message" class="mb-6">Operation lyckades!</p>
+            <button onclick="closeModal()" class="bg-indigo-600 text-white px-4 py-2 rounded">OK</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
