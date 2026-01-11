@@ -1,150 +1,194 @@
-// Variabel för att hålla koll på om vi redigerar eller skapar nytt
+let allFilms = []; 
 let isEditing = false;
 
-// Körs när sidan laddas
+const genreColors = {
+    'Action': 'border-red-500',
+    'Drama': 'border-blue-500',
+    'Komedi': 'border-yellow-400',
+    'Skräck': 'border-black',
+    'Sci-Fi': 'border-purple-500',
+    'Thriller': 'border-gray-600',
+    'default': 'border-gray-300'
+};
+
 document.addEventListener('DOMContentLoaded', () => {
-    fetchFilms(); // Hämta lista
+    fetchFilms();
 
-    // Lyssna på formulärets submit
     document.getElementById('film-form').addEventListener('submit', handleFormSubmit);
-
-    // Lyssna på avbryt-knappen
-    document.getElementById('cancel-btn').addEventListener('click', resetForm);
+    document.getElementById('search-input').addEventListener('input', handleFilter);
+    document.getElementById('filter-genre').addEventListener('change', handleFilter);
 });
 
-// Hämta alla filmer (GET)
 function fetchFilms() {
     fetch('/films')
         .then(response => response.json())
-        .then(data => renderList(data))
+        .then(data => {
+            allFilms = data; 
+            renderList(allFilms);
+        })
         .catch(error => console.error('Error:', error));
 }
 
-// Rendera listan (Krav: Lista och dynamiskt skapande av HTML)
-function renderList(films) {
-    const listContainer = document.getElementById('film-list');
-    listContainer.innerHTML = ''; // Töm listan först
-
-    films.forEach(film => {
-        // VISUELLT KRAV: Genre bestämmer färg på kanten (border)
-        let borderColor = 'border-gray-200';
-        if (film.genre === 'Action') borderColor = 'border-red-500';
-        else if (film.genre === 'Drama') borderColor = 'border-blue-500';
-        else if (film.genre === 'Komedi') borderColor = 'border-yellow-400';
-        else if (film.genre === 'Skräck') borderColor = 'border-black';
-        else if (film.genre === 'Sci-Fi') borderColor = 'border-purple-500';
-
-        // Skapa HTML för ett kort (Card)
-        const card = document.createElement('div');
-        card.className = `bg-white p-4 rounded shadow border-l-8 ${borderColor} flex flex-col justify-between`;
-
-        card.innerHTML = `
-            <div>
-                <h3 class="text-xl font-bold">${film.title}</h3>
-                <p class="text-gray-600">Regissör: ${film.director}</p>
-                <p class="text-gray-600">År: ${film.year}</p>
-                <span class="inline-block mt-2 px-2 py-1 text-xs font-semibold bg-gray-200 rounded">${film.genre}</span>
-            </div>
-            <div class="mt-4 flex gap-2 justify-end">
-                <button onclick="prepareEdit(${film.id}, '${film.title}', '${film.director}', ${film.year}, '${film.genre}')" 
-                        class="text-blue-600 hover:text-blue-800 font-bold">Ändra</button>
-                <button onclick="deleteFilm(${film.id})" 
-                        class="text-red-600 hover:text-red-800 font-bold ml-2">Ta bort</button>
-            </div>
-        `;
-        listContainer.appendChild(card);
+function apiCall(url, method, data = null) {
+    const options = {
+        method: method,
+        headers: { 'Content-Type': 'application/json' }
+    };
+    if (data) options.body = JSON.stringify(data);
+    
+    return fetch(url, options).then(res => {
+        if (!res.ok) throw new Error('API Error');
+        return res;
     });
 }
 
-// Hantera Formulär (POST och PUT)
+/* --- UI COMPONENTS & RENDERING --- */
+function renderList(films) {
+    const listContainer = document.getElementById('film-list');
+    const emptyState = document.getElementById('empty-state');
+    
+    listContainer.innerHTML = '';
+
+    if (films.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+    } else {
+        emptyState.classList.add('hidden');
+    }
+
+    films.forEach(film => {
+        const borderColor = genreColors[film.genre] || genreColors['default'];
+        const imageUrl = film.image || 'https://placehold.co/600x400?text=Ingen+Bild';
+
+        const card = document.createElement('div');
+        card.className = `group relative h-[400px] w-full rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer`;
+        card.innerHTML = `
+        <img src="${imageUrl}" alt="${film.title}" 
+             class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
+             onerror="this.src='https://placehold.co/600x900?text=Bild+saknas'">
+    
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+    
+        <div class="absolute top-4 right-4">
+            <span class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-white bg-indigo-600/90 backdrop-blur-sm rounded-full shadow-sm">
+                ${film.genre}
+            </span>
+        </div>
+    
+        <div class="absolute bottom-0 left-0 w-full p-6 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform">
+            <p class="text-sm text-gray-300 font-medium mb-1">${film.year} • ${film.director}</p>
+            <h3 class="text-2xl font-bold leading-tight mb-4 text-shadow">${film.title}</h3>
+            
+            <div class="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
+                <button onclick="prepareEdit(${film.id})" class="flex-1 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white py-2 rounded-lg font-semibold transition text-sm">
+                    <i class="fa-solid fa-pen"></i> Redigera
+                </button>
+                <button onclick="deleteFilm(${film.id})" class="flex-1 bg-red-600/80 hover:bg-red-600 text-white py-2 rounded-lg font-semibold transition text-sm">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    listContainer.appendChild(card);
+    });
+}
+
+/* --- FILTER & SEARCH LOGIC --- */
+function handleFilter() {
+    const searchQuery = document.getElementById('search-input').value.toLowerCase();
+    const genreFilter = document.getElementById('filter-genre').value;
+
+    const filteredFilms = allFilms.filter(film => {
+        const matchesSearch = film.title.toLowerCase().includes(searchQuery) || 
+                              film.director.toLowerCase().includes(searchQuery);
+        const matchesGenre = genreFilter === 'All' || film.genre === genreFilter;
+
+        return matchesSearch && matchesGenre;
+    });
+
+    renderList(filteredFilms);
+}
+
+/* --- FORM HANDLING --- */
+function toggleForm() {
+    const formContainer = document.getElementById('form-container');
+    formContainer.classList.toggle('hidden');
+    if (!formContainer.classList.contains('hidden')) {
+        document.getElementById('title').focus();
+    }
+}
+
 function handleFormSubmit(e) {
     e.preventDefault();
-
+    
+    const filmData = {
+        title: document.getElementById('title').value,
+        director: document.getElementById('director').value,
+        year: document.getElementById('year').value,
+        genre: document.getElementById('genre').value,
+        image: document.getElementById('image').value
+    };
+    
     const id = document.getElementById('film-id').value;
-    const title = document.getElementById('title').value;
-    const director = document.getElementById('director').value;
-    const year = document.getElementById('year').value;
-    const genre = document.getElementById('genre').value;
-
-    const filmData = { title, director, year, genre };
 
     if (isEditing) {
-        // UPPDATERA (PUT) - Skickar med ID i bodyn
-        fetch('/films', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...filmData, id: id })
-        })
-            .then(response => {
-                if (response.ok) {
-                    showModal('Uppdaterad!', 'Filmen har uppdaterats.');
-                    resetForm();
-                    fetchFilms();
-                }
+        apiCall('/films', 'PUT', { ...filmData, id })
+            .then(() => {
+                showModal('Uppdaterad!', 'Filmen har sparats.');
+                finishFormAction();
             });
     } else {
-        // SKAPA NY (POST)
-        fetch('/films', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(filmData)
-        })
-            .then(response => {
-                if (response.ok) {
-                    showModal('Sparad!', 'Ny film har lagts till.');
-                    resetForm();
-                    fetchFilms();
-                }
+        apiCall('/films', 'POST', filmData)
+            .then(() => {
+                showModal('Sparad!', 'Ny film lades till i biblioteket.');
+                finishFormAction();
             });
     }
 }
 
-// Ta bort film (DELETE)
-function deleteFilm(id) {
-    if (!confirm('Är du säker på att du vill ta bort denna film?')) return;
-
-    fetch(`/films/${id}`, {
-        method: 'DELETE'
-    })
-        .then(response => {
-            if (response.ok) {
-                showModal('Borttagen!', 'Filmen raderades ur databasen.');
-                fetchFilms();
-                // Om vi råkar redigera den vi tog bort, rensa formuläret
-                if (document.getElementById('film-id').value == id) {
-                    resetForm();
-                }
-            }
-        });
+function finishFormAction() {
+    resetForm();
+    toggleForm(); 
+    fetchFilms(); 
 }
 
-// Förbered redigering (Fyll formuläret utan att anropa API)
-window.prepareEdit = function (id, title, director, year, genre) {
-    document.getElementById('film-id').value = id;
-    document.getElementById('title').value = title;
-    document.getElementById('director').value = director;
-    document.getElementById('year').value = year;
-    document.getElementById('genre').value = genre;
-
-    // Ändra UI till "Edit mode"
-    isEditing = true;
-    document.getElementById('form-title').innerText = "Redigera Film";
-    document.getElementById('cancel-btn').classList.remove('hidden');
-
-    // Scrolla upp till formuläret
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// Återställ formulär
 function resetForm() {
     document.getElementById('film-form').reset();
     document.getElementById('film-id').value = '';
     isEditing = false;
     document.getElementById('form-title').innerText = "Lägg till ny film";
-    document.getElementById('cancel-btn').classList.add('hidden');
 }
 
-// Modal funktioner (Feedback)
+function prepareEdit(id) {
+    const film = allFilms.find(f => f.id === id);
+    if (!film) return;
+
+    document.getElementById('film-id').value = film.id;
+    document.getElementById('title').value = film.title;
+    document.getElementById('director').value = film.director;
+    document.getElementById('year').value = film.year;
+    document.getElementById('genre').value = film.genre;
+    document.getElementById('image').value = film.image;
+
+    isEditing = true;
+    document.getElementById('form-title').innerText = "Redigera Film";
+    
+    const formContainer = document.getElementById('form-container');
+    formContainer.classList.remove('hidden');
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteFilm(id) {
+    if (!confirm('Är du säker på att du vill ta bort denna film?')) return;
+
+    apiCall(`/films/${id}`, 'DELETE')
+        .then(() => {
+            showModal('Borttagen!', 'Filmen är borta.');
+            fetchFilms();
+        });
+}
+
 function showModal(title, message) {
     document.getElementById('modal-title').innerText = title;
     document.getElementById('modal-message').innerText = message;

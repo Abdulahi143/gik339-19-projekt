@@ -8,85 +8,56 @@ const port = 3000;
 
 // Middleware
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public'))); // Servar frontend-filer
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Databas-setup (Skapar filen films.db automatiskt)
+// Databas-setup
 const db = new sqlite3.Database('./films.db', (err) => {
-    if (err) {
-        console.error(err.message);
-    }
-    console.log('Ansluten till SQLite-databasen.');
+    if (err) console.error(err.message);
+    else console.log('Ansluten till SQLite-databasen.');
 });
 
-// Skapa tabellen om den inte finns
 db.run(`CREATE TABLE IF NOT EXISTS films (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT,
     director TEXT,
     year INTEGER,
-    genre TEXT
+    genre TEXT,
+    image TEXT
 )`);
 
-/* --- API ENDPOINTS (RESTFul) --- */
-
-// 1. Hämta alla filmer (GET /films)
+/* --- API ENDPOINTS --- */
 app.get('/films', (req, res) => {
-    const sql = "SELECT * FROM films";
-    db.all(sql, [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+    db.all("SELECT * FROM films", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 });
 
-// 2. Skapa en film (POST /films)
 app.post('/films', (req, res) => {
-    const { title, director, year, genre } = req.body;
-    const sql = "INSERT INTO films (title, director, year, genre) VALUES (?, ?, ?, ?)";
-    const params = [title, director, year, genre];
-
-    db.run(sql, params, function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+    const { title, director, year, genre, image } = req.body;
+    db.run("INSERT INTO films (title, director, year, genre, image) VALUES (?, ?, ?, ?, ?)", 
+    [title, director, year, genre, image], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ message: "Film skapad", id: this.lastID });
     });
 });
 
-// 3. Uppdatera en film (PUT /films) - Notera: Kravet sa PUT /resurs, men ofta används /resurs/:id.
-// Vi skickar ID i bodyn enligt kravspecen för PUT.
 app.put('/films', (req, res) => {
-    const { id, title, director, year, genre } = req.body;
-    const sql = "UPDATE films SET title = ?, director = ?, year = ?, genre = ? WHERE id = ?";
-    const params = [title, director, year, genre, id];
-
-    db.run(sql, params, function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+    const { id, title, director, year, genre, image } = req.body;
+    db.run("UPDATE films SET title = ?, director = ?, year = ?, genre = ?, image = ? WHERE id = ?", 
+    [title, director, year, genre, image, id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ message: "Film uppdaterad", changes: this.changes });
     });
 });
 
-// 4. Ta bort en film (DELETE /films/:id)
 app.delete('/films/:id', (req, res) => {
-    const id = req.params.id;
-    const sql = "DELETE FROM films WHERE id = ?";
-
-    db.run(sql, id, function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+    db.run("DELETE FROM films WHERE id = ?", req.params.id, function (err) {
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ message: "Film borttagen", changes: this.changes });
     });
 });
 
-// Starta servern
 app.listen(port, () => {
     console.log(`Servern körs på http://localhost:${port}`);
 });
