@@ -6,11 +6,11 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
-// Middleware
+// Middleware--> Abdulahi
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Databas-setup
+// Databas-setup --> Said
 const db = new sqlite3.Database('./films.db', (err) => {
     if (err) console.error(err.message);
     else console.log('Ansluten till SQLite-databasen.');
@@ -25,7 +25,7 @@ db.run(`CREATE TABLE IF NOT EXISTS films (
     image TEXT
 )`);
 
-/* --- API ENDPOINTS --- */
+/* --- API ENDPOINTS --- */ // --> Ömer
 app.get('/films', (req, res) => {
     db.all("SELECT * FROM films", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
